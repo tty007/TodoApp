@@ -15,12 +15,19 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  AsyncStorage,
 } from 'react-native';
+import TodoList from './TodoList';
 
 export default class App extends Component {
   state = {
     newTodo: '',
     todos: [],
+  }
+
+  constructor(props) {
+    super(props);
+    this.loadTodos();
   }
 
   onChangeText(newTodo) {
@@ -34,6 +41,24 @@ export default class App extends Component {
     this.setState({
       newTodo: '',
       todos: [newTodo, ...this.state.todos],
+    }, () => this.storeTodos())
+  }
+
+  onPressDelete(index) {
+    this.setState({
+      todos: this.state.todos.filter((t, i) => i !== index),
+    }, () => this.storeTodos())
+  }
+
+  storeTodos() {
+    const str = JSON.stringify(this.state.todos);
+    AsyncStorage.setItem('todos', str);
+  }
+
+  loadTodos() {
+    AsyncStorage.getItem('todos').then((str) => {
+      const todos = str ? JSON.parse(str) : [];
+      this.setState({ todos });
     })
   }
 
@@ -46,15 +71,9 @@ export default class App extends Component {
           onPress={() => this.onPressAdd()}>
           <Text style={styles.addButtonText}>ADD</Text>
         </TouchableOpacity>
-        <ScrollView style={styles.scrollview}>
-          {
-            this.state.todos.map((todo, index) => (
-              <View key={todo+index} style={styles.todoContainer}>
-                <Text>{todo}</Text>
-              </View>
-            ))
-          }
-        </ScrollView>
+        <TodoList todos={this.state.todos}
+          onPressDelete={(index) => this.onPressDelete(index)}
+        ></TodoList>
       </View>
     );
   }
@@ -81,11 +100,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  scrollview: {
-    backgroundColor: '#DDD',
-  },
-  todoContainer: {
-    backgroundColor: '#FFF',
-    padding: 10,
-  }
 });
